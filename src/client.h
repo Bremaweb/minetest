@@ -683,6 +683,8 @@ private:
 	bool m_cache_smooth_lighting;
 	bool m_cache_enable_shaders;
 
+	void updateMumble(const char* name, v3f pos, s32 yaw);	
+
 	DISABLE_CLASS_COPY(Client);
 };
 

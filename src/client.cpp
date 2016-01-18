@@ -52,6 +52,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "database-sqlite3.h"
 #include "serialization.h"
 #include "guiscalingfilter.h"
+#include "mumblelink.h"
 
 extern gui::IGUIEnvironment* guienv;
 
@@ -374,6 +375,7 @@ void Client::step(float dtime)
 	static bool initial_step = true;
 	if (initial_step) {
 		initial_step = false;
+		initMumble();
 	}
 	else if(m_state == LC_Created) {
 		float &counter = m_connection_reinit_timer;
@@ -465,6 +467,8 @@ void Client::step(float dtime)
 	LocalPlayer *player = m_env.getLocalPlayer();
 	assert(player != NULL);
 	player->applyControl(dtime);
+
+	updateMumble(player->getName(), player->getPosition(), player->getYaw());	
 
 	// Step environment
 	m_env.step(dtime);
@@ -1956,4 +1960,62 @@ scene::IAnimatedMesh* Client::getMesh(const std::string &filename)
 	mesh->grab();
 	smgr->getMeshCache()->removeMesh(mesh);
 	return mesh;
+}
+
+void Client::updateMumble(const char* name, v3f pos, s32 yaw) {
+	if (!lm)
+		return;
+
+	if (lm->uiVersion != 2) {
+		wcsncpy(lm->name, L"Minetest Mumble", 256);
+		wcsncpy(lm->description, L"Minetest Mumble Postional Audio", 2048);
+		lm->uiVersion = 2;
+	}
+	lm->uiTick++;
+
+	// Left handed coordinate system.
+	// X positive towards "right".
+	// Y positive towards "up".
+	// Z positive towards "front".
+	//
+	// 1 unit = 1 meter
+
+	// Unit vector pointing out of the avatars eyes (here Front looks into scene).
+	lm->fAvatarFront[0] = pos.X;
+	lm->fAvatarFront[1] = pos.Y;
+	lm->fAvatarFront[2] = pos.Z;
+
+	// Unit vector pointing out of the top of the avatars head (here Top looks straight up).
+	lm->fAvatarTop[0] = pos.X;
+	lm->fAvatarTop[1] = pos.Y + 0.5;
+	lm->fAvatarTop[2] = pos.Z;
+
+	// Position of the avatar (here standing slightly off the origin)
+	lm->fAvatarPosition[0] = pos.X;
+	lm->fAvatarPosition[1] = pos.Y;
+	lm->fAvatarPosition[2] = pos.Z;
+
+	// Same as avatar but for the camera.
+	lm->fCameraPosition[0] = pos.X;
+	lm->fCameraPosition[1] = pos.Y;
+	lm->fCameraPosition[2] = pos.Z;
+
+	lm->fCameraFront[0] = pos.X;
+	lm->fCameraFront[1] = pos.Y + 0.5;
+	lm->fCameraFront[2] = pos.Z;
+
+	lm->fCameraTop[0] = pos.X;
+	lm->fCameraTop[1] = pos.Y;
+	lm->fCameraTop[2] = pos.Z;
+
+	// Identifier which uniquely identifies a certain player in a context (e.g. the ingame Name).
+	const size_t cSize = strlen(name) + 1;
+	wchar_t* wc = new wchar_t[cSize];
+	mbstowcs(wc, name, cSize);
+	wcsncpy(lm->identity, wc, 256);
+
+	// Context should be equal for players which should be able to hear each other positional and
+	// differ for those who shouldn't (e.g. it could contain the server+port and team)
+	memcpy(lm->context, "Minetest\x00\x01\x02\x03\x04", 16);
+	lm->context_len = 16;
 }
