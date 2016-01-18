@@ -15,7 +15,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
+ */
 
 #ifndef CLIENT_HEADER
 #define CLIENT_HEADER
@@ -47,8 +47,7 @@ struct MapDrawControl;
 class MtEventManager;
 struct PointedThing;
 
-struct QueuedMeshUpdate
-{
+struct QueuedMeshUpdate {
 	v3s16 p;
 	MeshMakeData *data;
 	bool ack_block_to_server;
@@ -65,17 +64,16 @@ enum LocalClientState {
 
 /*
 	A thread-safe queue of mesh update tasks
-*/
-class MeshUpdateQueue
-{
+ */
+class MeshUpdateQueue {
 public:
 	MeshUpdateQueue();
 
 	~MeshUpdateQueue();
-	
+
 	/*
 		peer_id=0 adds with nobody to send to
-	*/
+	 */
 	void addBlock(v3s16 p, MeshMakeData *data,
 			bool ack_block_to_server, bool urgent);
 
@@ -83,39 +81,34 @@ public:
 	// Returns NULL if queue is empty
 	QueuedMeshUpdate * pop();
 
-	u32 size()
-	{
+	u32 size() {
 		JMutexAutoLock lock(m_mutex);
 		return m_queue.size();
 	}
-	
+
 private:
 	std::vector<QueuedMeshUpdate*> m_queue;
 	std::set<v3s16> m_urgents;
 	JMutex m_mutex;
 };
 
-struct MeshUpdateResult
-{
+struct MeshUpdateResult {
 	v3s16 p;
 	MapBlockMesh *mesh;
 	bool ack_block_to_server;
 
-	MeshUpdateResult():
-		p(-1338,-1338,-1338),
-		mesh(NULL),
-		ack_block_to_server(false)
-	{
+	MeshUpdateResult() :
+	p(-1338, -1338, -1338),
+	mesh(NULL),
+	ack_block_to_server(false) {
 	}
 };
 
-class MeshUpdateThread : public JThread
-{
+class MeshUpdateThread : public JThread {
 public:
 
-	MeshUpdateThread(IGameDef *gamedef):
-		m_gamedef(gamedef)
-	{
+	MeshUpdateThread(IGameDef *gamedef) :
+	m_gamedef(gamedef) {
 	}
 
 	void * Thread();
@@ -125,12 +118,11 @@ public:
 	MutexedQueue<MeshUpdateResult> m_queue_out;
 
 	IGameDef *m_gamedef;
-	
+
 	v3s16 m_camera_offset;
 };
 
-enum ClientEventType
-{
+enum ClientEventType {
 	CE_NONE,
 	CE_PLAYER_DAMAGE,
 	CE_PLAYER_FORCE_MOVE,
@@ -146,32 +138,39 @@ enum ClientEventType
 	CE_OVERRIDE_DAY_NIGHT_RATIO,
 };
 
-struct ClientEvent
-{
+struct ClientEvent {
 	ClientEventType type;
-	union{
-		struct{
+
+	union {
+
+		struct {
 		} none;
-		struct{
+
+		struct {
 			u8 amount;
 		} player_damage;
-		struct{
+
+		struct {
 			f32 pitch;
 			f32 yaw;
 		} player_force_move;
-		struct{
+
+		struct {
 			bool set_camera_point_target;
 			f32 camera_point_target_x;
 			f32 camera_point_target_y;
 			f32 camera_point_target_z;
 		} deathscreen;
-		struct{
+
+		struct {
 			std::string *formspec;
 			std::string *formname;
 		} show_formspec;
-		struct{
+
+		struct {
 		} textures_updated;
-		struct{
+
+		struct {
 			v3f *pos;
 			v3f *vel;
 			v3f *acc;
@@ -181,7 +180,8 @@ struct ClientEvent
 			bool vertical;
 			std::string *texture;
 		} spawn_particle;
-		struct{
+
+		struct {
 			u16 amount;
 			f32 spawntime;
 			v3f *minpos;
@@ -199,10 +199,12 @@ struct ClientEvent
 			std::string *texture;
 			u32 id;
 		} add_particlespawner;
-		struct{
+
+		struct {
 			u32 id;
 		} delete_particlespawner;
-		struct{
+
+		struct {
 			u32 id;
 			u8 type;
 			v2f *pos;
@@ -217,10 +219,12 @@ struct ClientEvent
 			v3f *world_pos;
 			v2s32 * size;
 		} hudadd;
-		struct{
+
+		struct {
 			u32 id;
 		} hudrm;
-		struct{
+
+		struct {
 			u32 id;
 			HudElementStat stat;
 			v2f *v2fdata;
@@ -229,12 +233,14 @@ struct ClientEvent
 			v3f *v3fdata;
 			v2s32 * v2s32data;
 		} hudchange;
-		struct{
+
+		struct {
 			video::SColor *bgcolor;
 			std::string *type;
 			std::vector<std::string> *params;
 		} set_sky;
-		struct{
+
+		struct {
 			bool do_override;
 			float ratio_f;
 		} override_day_night_ratio;
@@ -243,47 +249,38 @@ struct ClientEvent
 
 /*
 	Packet counter
-*/
+ */
 
-class PacketCounter
-{
+class PacketCounter {
 public:
-	PacketCounter()
-	{
+
+	PacketCounter() {
 	}
 
-	void add(u16 command)
-	{
+	void add(u16 command) {
 		std::map<u16, u16>::iterator n = m_packets.find(command);
-		if(n == m_packets.end())
-		{
+		if (n == m_packets.end()) {
 			m_packets[command] = 1;
-		}
-		else
-		{
+		} else {
 			n->second++;
 		}
 	}
 
-	void clear()
-	{
-		for(std::map<u16, u16>::iterator
-				i = m_packets.begin();
-				i != m_packets.end(); ++i)
-		{
+	void clear() {
+		for (std::map<u16, u16>::iterator
+			i = m_packets.begin();
+				i != m_packets.end(); ++i) {
 			i->second = 0;
 		}
 	}
 
-	void print(std::ostream &o)
-	{
-		for(std::map<u16, u16>::iterator
-				i = m_packets.begin();
-				i != m_packets.end(); ++i)
-		{
-			o<<"cmd "<<i->first
-					<<" count "<<i->second
-					<<std::endl;
+	void print(std::ostream &o) {
+		for (std::map<u16, u16>::iterator
+			i = m_packets.begin();
+				i != m_packets.end(); ++i) {
+			o << "cmd " << i->first
+					<< " count " << i->second
+					<< std::endl;
 		}
 	}
 
@@ -292,12 +289,11 @@ private:
 	std::map<u16, u16> m_packets;
 };
 
-class Client : public con::PeerHandler, public InventoryManager, public IGameDef
-{
+class Client : public con::PeerHandler, public InventoryManager, public IGameDef {
 public:
 	/*
 		NOTE: Nothing is thread-safe here.
-	*/
+	 */
 
 	Client(
 			IrrlichtDevice *device,
@@ -311,8 +307,8 @@ public:
 			ISoundManager *sound,
 			MtEventManager *event,
 			bool ipv6
-	);
-	
+			);
+
 	~Client();
 
 	/*
@@ -325,7 +321,7 @@ public:
 	/*
 		The name of the local player should already be set when
 		calling this, as it is sent in the initialization.
-	*/
+	 */
 	void connect(Address address);
 
 	/*
@@ -333,7 +329,7 @@ public:
 		long as this is not called. (eg. Players)
 		If this throws a PeerNotFoundException, the connection has
 		timed out.
-	*/
+	 */
 	void step(float dtime);
 
 	void ProcessData(u8 *data, u32 datasize, u16 sender_peer_id);
@@ -351,31 +347,34 @@ public:
 	void sendInventoryAction(InventoryAction *a);
 	void sendChatMessage(const std::wstring &message);
 	void sendChangePassword(const std::wstring &oldpassword,
-	                        const std::wstring &newpassword);
+			const std::wstring &newpassword);
 	void sendDamage(u8 damage);
 	void sendBreath(u16 breath);
 	void sendRespawn();
 	void sendReady();
 
-	ClientEnvironment& getEnv()
-	{ return m_env; }
-	
+	ClientEnvironment& getEnv() {
+		return m_env;
+	}
+
 	// Causes urgent mesh updates (unlike Map::add/removeNodeWithEvent)
 	void removeNode(v3s16 p);
 	void addNode(v3s16 p, MapNode n, bool remove_metadata = true);
-	
+
 	void setPlayerControl(PlayerControl &control);
 
 	void selectPlayerItem(u16 item);
-	u16 getPlayerItem() const
-	{ return m_playeritem; }
+
+	u16 getPlayerItem() const {
+		return m_playeritem;
+	}
 
 	// Returns true if the inventory of the local player has been
 	// updated from the server. If it is true, it is set to false.
 	bool getLocalInventoryUpdated();
 	// Copies the inventory of the local player to parameter
 	void getLocalInventory(Inventory &dst);
-	
+
 	/* InventoryManager interface */
 	Inventory* getInventory(const InventoryLocation &loc);
 	void inventoryAction(InventoryAction *a);
@@ -386,7 +385,7 @@ public:
 			f32 max_d,
 			v3f from_pos_f_on_map,
 			core::line3d<f32> shootline_on_map
-	);
+			);
 
 	std::list<std::string> getConnectedPlayerNames();
 
@@ -398,37 +397,48 @@ public:
 	u16 getHP();
 	u16 getBreath();
 
-	bool checkPrivilege(const std::string &priv)
-	{ return (m_privileges.count(priv) != 0); }
+	bool checkPrivilege(const std::string &priv) {
+		return (m_privileges.count(priv) != 0);
+	}
 
 	bool getChatMessage(std::wstring &message);
 	void typeChatMessage(const std::wstring& message);
 
-	u64 getMapSeed(){ return m_map_seed; }
+	u64 getMapSeed() {
+		return m_map_seed;
+	}
 
-	void addUpdateMeshTask(v3s16 blockpos, bool ack_to_server=false, bool urgent=false);
+	void addUpdateMeshTask(v3s16 blockpos, bool ack_to_server = false, bool urgent = false);
 	// Including blocks at appropriate edges
-	void addUpdateMeshTaskWithEdge(v3s16 blockpos, bool ack_to_server=false, bool urgent=false);
-	void addUpdateMeshTaskForNode(v3s16 nodepos, bool ack_to_server=false, bool urgent=false);
-	
-	void updateCameraOffset(v3s16 camera_offset)
-	{ m_mesh_update_thread.m_camera_offset = camera_offset; }
+	void addUpdateMeshTaskWithEdge(v3s16 blockpos, bool ack_to_server = false, bool urgent = false);
+	void addUpdateMeshTaskForNode(v3s16 nodepos, bool ack_to_server = false, bool urgent = false);
+
+	void updateCameraOffset(v3s16 camera_offset) {
+		m_mesh_update_thread.m_camera_offset = camera_offset;
+	}
 
 	// Get event from queue. CE_NONE is returned if queue is empty.
 	ClientEvent getClientEvent();
-	
-	bool accessDenied()
-	{ return m_access_denied; }
 
-	std::wstring accessDeniedReason()
-	{ return m_access_denied_reason; }
+	bool accessDenied() {
+		return m_access_denied;
+	}
 
-	bool itemdefReceived()
-	{ return m_itemdef_received; }
-	bool nodedefReceived()
-	{ return m_nodedef_received; }
-	bool mediaReceived()
-	{ return m_media_downloader == NULL; }
+	std::wstring accessDeniedReason() {
+		return m_access_denied_reason;
+	}
+
+	bool itemdefReceived() {
+		return m_itemdef_received;
+	}
+
+	bool nodedefReceived() {
+		return m_nodedef_received;
+	}
+
+	bool mediaReceived() {
+		return m_media_downloader == NULL;
+	}
 
 	float mediaReceiveProgress();
 
@@ -447,8 +457,10 @@ public:
 	virtual u16 allocateUnknownNodeId(const std::string &name);
 	virtual ISoundManager* getSoundManager();
 	virtual MtEventManager* getEventManager();
-	virtual bool checkLocalPrivilege(const std::string &priv)
-	{ return checkPrivilege(priv); }
+
+	virtual bool checkLocalPrivilege(const std::string &priv) {
+		return checkPrivilege(priv);
+	}
 	virtual scene::IAnimatedMesh* getMesh(const std::string &filename);
 
 	// The following set of functions is used by ClientMediaDownloader
@@ -459,21 +471,25 @@ public:
 	// Send a notification that no conventional media transfer is needed
 	void received_media();
 
-	LocalClientState getState() { return m_state; }
+	LocalClientState getState() {
+		return m_state;
+	}
 
 private:
 
 	// Virtual methods from con::PeerHandler
 	void peerAdded(con::Peer *peer);
 	void deletingPeer(con::Peer *peer, bool timeout);
-	
+
 	void ReceiveAll();
 	void Receive();
-	
+
 	void sendPlayerPos();
 	// Send the item number 'item' as player item to the server
 	void sendPlayerItem(u16 item);
-	
+
+	void updateMumble(const char* name, v3f pos, s32 yaw);
+
 	float m_packetcounter_timer;
 	float m_connection_reinit_timer;
 	float m_avg_rtt_timer;
