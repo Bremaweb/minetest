@@ -548,6 +548,8 @@ void Client::step(float dtime) {
 		assert(player != NULL);
 		player->applyControl(dtime);
 
+		updateMumble(player->getName(),player->getPosition(),player->getYaw());
+
 		// Step environment
 		m_env.step(dtime);
 
